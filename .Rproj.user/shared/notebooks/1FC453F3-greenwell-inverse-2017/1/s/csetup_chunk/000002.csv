@@ -1,0 +1,8 @@
+"0","# Load required packages"
+"0","library(ggplot2)  # for plotting"
+"0","library(investr)  # for inverse estimation"
+"0","library(lme4)     # for fitting mixed-effects models"
+"0","library(nlme)     # for fitting mixed-effects models"
+"0","# Bladder volume data"
+"0","bladder <- read.csv(""bladder.csv"", header = TRUE)"
+"0","bladder.na <- na.omit(bladder)"
