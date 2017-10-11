@@ -60,6 +60,7 @@ HD <- c(13.2, 11.1, 10.3, NA, 4.8, 7.7, NA, 5.9, 1.9, 6.5, 19.8,
 bladder <- na.omit(data.frame(subject = subject, HD = HD, volume = volume))
 ```
 
+#### Keywords: calibration, LMM, bootstrap
 
 ## Introduction
 
