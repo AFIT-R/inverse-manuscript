@@ -5,14 +5,14 @@ author:
 - Christine M. Schubert Kabban
 - Andrew J. McCarthy
 - Bradley C. Boehmke
-bibliography: greenwell-inverse-2017.bib
 output:
-  word_document: default
   pdf_document: default
   html_document: default
-header-includes:
-- \setlength\parindent{24pt}
-- \DeclareMathOperator*{\argmax}{arg\,max}
+  word_document: default
+header-includes: 
+  - \setlength\parindent{24pt}
+  - \DeclareMathOperator*{\argmax}{arg\,max}
+bibliography: greenwell-inverse-2017.bib
 subtitle: with Application in R
 abstract: |
   Inverse estimation, also known as inverse prediction or statistical calibration, is a classical and well-known problem in regression. In simple terms, it involves the use of an observed value of the response, or specified value of the mean response, to make inference on the corresponding unknown value of the explanatory variable. In this paper, we describe how to calculate approximate calibration confidence intervals for the unknown value of the explanatory variable in linear mixed-effects models using both asymptotic methods and a parametric bootstrap. The converage probability for the asymptotic procedures is assessed using a small Monte-Carlo simulation. Examples are given using the R programming language with a real data set.
@@ -359,12 +359,8 @@ fun <- function(x) {
 uniroot(fun, lower = 1, upper = 17.5, tol = 1e-10, maxiter = 1000)$root
 ```
 In other words, `invest` relies on the R function `uniroot` from the `stats` package to solve the equation $f\left(x; \widehat{\boldsymbol{\beta}}\right) - y_0 = 0$ numerically for $x$.  If the solution does not lie in the range of predictor values, then an error message will be displayed, as in
-```{r, eval=FALSE}
+```{r, error=TRUE}
 invest(bladder.lme, y0 = 1500)
-```
-```
-Error: Point estimate not found in the search interval (1, 17.5). Try tweaking 
-the values of lower and upper.
 ```
 The values for `lower`, `upper`, `tol`, and `maxiter` are controlled via the arguments of the same name listed in Table 2.
 
