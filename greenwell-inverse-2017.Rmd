@@ -134,7 +134,7 @@ where $\widehat{\boldsymbol{\beta}}$ is the ML estimator of $\boldsymbol{\beta}$
 
 Another approach is to maximize the profiled likelihood for $x_0$. This can be done simply by updating the original fitted model after adding a new point to the original data. Doing this for a range of values for $x_0$ will give the profile lilekihood $L_p\left(x_0\right)$. The maximum likelihood estimate of $x_0$ is then
 $$
-\widehat{x}_0 = \argmax_{x_0} L_p\left(x_0\right)
+\widehat{x}_0 = argmax_{x_0} L_p\left(x_0\right)
 $$
 For a balanced random intercept model, this coincides with the inverse estimator (2).
 
