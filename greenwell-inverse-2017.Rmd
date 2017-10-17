@@ -60,11 +60,11 @@ HD <- c(13.2, 11.1, 10.3, NA, 4.8, 7.7, NA, 5.9, 1.9, 6.5, 19.8,
 bladder <- na.omit(data.frame(subject = subject, HD = HD, volume = volume))
 ```
 
-#### Keywords: calibration, LMM, bootstrap
+#### Keywords: calibration, regulation, inverse prediction, LMM, parametric bootstrap
 
 ## Introduction
 
-Consider an ordinary regression model $\mathcal{Y}_i = f\left(x_i; \boldsymbol{\beta} \right) + \epsilon_i$ $(i = 1, ..., n)$, where $f$ is a known expectation function (called a *calibration curve* in this context) that is monotonic over the range of interest and $\epsilon_i \stackrel{iid}{\sim} \mathcal{N}\left( 0, \sigma^2 \right)$. A common problem in regression is to predict a future response $\mathcal{Y}_0$, or estimate the mean response $f_0 = E\left[\mathcal{Y}_0\right]$, for a known value of the explanatory variable $x_0$. Often, however, there is a need to do the reverse; that is, given an observed value of the response $\mathcal{Y} = y_0$ (*calibration*), or a specified value of the mean response (*regulation*), infer the unknown value of the explanatory variable $x_0$; we refer to both situations more generally as inverse estimation. Though this paper focuses on calibration (in particular, *controlled calibration*, where the predictor $x$ is held fixed by deisgn), the methods can be narrowed to handle regulation.
+Consider an ordinary regression model $\mathcal{Y}_i = f\left(x_i; \boldsymbol{\beta} \right) + \epsilon_i$ $(i = 1, ..., n)$, where $f$ is a known expectation function (called a *calibration curve* in this context) that is monotonic over the range of interest and $\epsilon_i \stackrel{iid}{\sim} \mathcal{N}\left( 0, \sigma^2 \right)$. A common problem in regression is to predict a future response $\mathcal{Y}_0$, or estimate the mean response $f_0 = E\left[\mathcal{Y}_0\right]$, for a known value of the explanatory variable $x_0$. Often, however, there is a need to do the reverse; that is, given an observed value of the response $\mathcal{Y} = y_0$ (*calibration*), or a specified value of the mean response (*regulation*), infer the unknown value of the explanatory variable $x_0$. We refer to both situations (i.e., calibration and regulation) more generally as inverse estimation. Though this paper focuses on calibration (in particular, *controlled calibration*, where the predictor $x$ is held fixed by design), the methods can be narrowed to handle regulation.
 
 A thorough overview of the calibration problem is given in @osborne-statistical-1991 and @greenwell-topics-2014. @oman-calibration-1998 considers the case of a random intercept and slope model and provides an approximate parametric bootstrap algorithm for inferring $x_0$ (the algorithm we present later is fully parametric). 
 
@@ -73,7 +73,7 @@ This paper concerns inverse estimation with linear mixed-effects models (LMMs); 
 
 ### Linear mixed-effects models
 
-In practice, multiple observations are often taken from the same subject or experimental unit. This type of data is called *repeated measures* data. This includes, for example, *longitudinal* data or *panel* data (where experimental units are observed over time). The one feature to remember about repeated measures is that the individual observations are no longer independent. This feature must be taken into account in order to obtain valid standard errors, confidence intervals, etc. One of the most common and flexible ways for handling repeated measures data is to use LMMs.
+In practice, multiple observations are often taken from the same subject or experimental unit. This type of data is called *repeated measures* data. This includes, for example, *longitudinal* data or *panel* data (where experimental units are observed over time). One feature to remember about repeated measures is that the individual observations are not independent. This feature must be taken into account in order to obtain valid standard errors, confidence intervals, etc. One of the most common and flexible ways for handling repeated measures data is to use LMMs.
 
 LMMs (i.e., linear regression models with random coefficients) can be represented in many different, but equivalent forms. One of the most common forms, attributed to @laird-random-1982, is
 $$
@@ -82,14 +82,14 @@ $$
 where
 
   * $\boldsymbol{\mathcal{Y}}_i$ is an $n_i \times 1$ response vector for the $i$-th subject/cluster/group;
-  * $\boldsymbol{X}_i$ is an $n_i \times p$ design matrix for the fixed-effects;
-  * $\boldsymbol{Z}_i$ is an $n_i \times q$ design matrix for the random-effects;
-  * $\boldsymbol{\beta}$ is a $p \times 1$ vector of fixed-effects coefficients;
-  * $\boldsymbol{b}_i$ is a $q \times 1$ vector of random-effects coefficients with mean zero and variance-covariance matrix $\boldsymbol{D}$;
-  * $\boldsymbol{D}$ is a $q \times q$ variance-covariance matrix for the random-effects;
+  * $\boldsymbol{X}_i$ is an $n_i \times p$ design matrix for the fixed effects;
+  * $\boldsymbol{Z}_i$ is an $n_i \times q$ design matrix for the random effects;
+  * $\boldsymbol{\beta}$ is a $p \times 1$ vector of fixed effects coefficients;
+  * $\boldsymbol{b}_i$ is a $q \times 1$ vector of random effects coefficients with mean zero and variance-covariance matrix $\boldsymbol{D}$;
+  * $\boldsymbol{D}$ is a $q \times q$ variance-covariance matrix for the random effects;
   * $\boldsymbol{\epsilon}_i$ is an $n_i \times 1$ vector of random errors with mean zero and variance-covariance matrix $\sigma^2\boldsymbol{I}$.
 
-The random-effects $\boldsymbol{b}_i$ and errors $\boldsymbol{\epsilon}_i$ are often assumed to follow a normal distribution. By stacking the data, the (normal) LMM can be written concisely as
+The random effects $\boldsymbol{b}_i$ and errors $\boldsymbol{\epsilon}_i$ are often assumed to follow a normal distribution. By stacking the data, the (normal) LMM can be written concisely as
 $$
     \boldsymbol{\mathcal{Y}} = \boldsymbol{X}\boldsymbol{\beta} + \boldsymbol{Z}\boldsymbol{b} + \boldsymbol{\epsilon}, \quad
       \begin{bmatrix}
@@ -110,13 +110,13 @@ The additional term $\boldsymbol{Z}\boldsymbol{b}$ in the model imposes a specif
 $$
   \boldsymbol{\mathcal{Y}} \sim \mathcal{N}\left(\boldsymbol{X}\boldsymbol{\beta}, \boldsymbol{V}\right), \quad \boldsymbol{V} = \boldsymbol{Z}\boldsymbol{D}\boldsymbol{Z}^\top + \sigma^2\boldsymbol{I}.
 $$
-Thus, the fixed-effects determine the mean of $\boldsymbol{\mathcal{Y}}$, while the random-effects govern the variance-covariance structure of $\boldsymbol{\mathcal{Y}}$. Different random-effects structures impose different variance-covariance structures on the response resulting in a highly flexible framework for modelling repeated measures.
+Thus, the fixed effects determine the mean of $\boldsymbol{\mathcal{Y}}$, while the random effects govern the variance-covariance structure of $\boldsymbol{\mathcal{Y}}$. Different random effects structures impose different variance-covariance structures on the response, resulting in a highly flexible framework for modeling repeated measures.
 
-The random-effects variance-covariance matrix $\boldsymbol{D}$ has at most $q(q+1)/2$ unique elements which we represent by the vector $\boldsymbol{\theta}$. There are a number of methods available for estimating $\left( \boldsymbol{\beta}, \sigma^2, \boldsymbol{\theta} \right)$; see, for example, @mcculloch_generalized_2008, chap. 6, and @demidenko_mixed_2013, chap. 2. Most commonly, the fixed-effects $\boldsymbol{\beta}$ are estimated via the method of maximum likelihood (ML), while the variance components $\left(\sigma^2, \boldsymbol{\theta}\right)$ are estimated via restricted maximum likelihood (REML). The ML estimator of $\boldsymbol{\beta}$, given by
+The random effects variance-covariance matrix $\boldsymbol{D}$ has at most $q(q+1)/2$ unique elements which we represent by the vector $\boldsymbol{\theta}$. There are a number of methods available for estimating $\left( \boldsymbol{\beta}, \sigma^2, \boldsymbol{\theta} \right)$; see, for example, @mcculloch_generalized_2008, chap. 6, and @demidenko_mixed_2013, chap. 2. Most commonly, the fixed effects $\boldsymbol{\beta}$ are estimated via the method of maximum likelihood (ML), while the variance components $\left(\sigma^2, \boldsymbol{\theta}\right)$ are estimated via restricted maximum likelihood (REML). The ML estimator of $\boldsymbol{\beta}$, given by
 $$
 \widehat{\boldsymbol{\beta}} = \left( \boldsymbol{X}^\top \widehat{\boldsymbol{V}}^{-1} \boldsymbol{X} \right)\boldsymbol{X}^\top\boldsymbol{\mathcal{Y}},
 $$
-depends on the estimated variance components through $\widehat{\boldsymbol{V}}$ which makes it difficult to capture the variability of $\widehat{\boldsymbol{\beta}}$ in small sample sizes [see @mcculloch_generalized_2008, pp. 165-167]. The usual practice is to ignore the variability of the estimated variance components when making inference about the fixed-effects; that is, treat $\widehat{\boldsymbol{V}}$ as the true (fixed) value of $\boldsymbol{V}$. Modern computational procedures such as the parametric bootstrap and Markov chain Monte Carlo (MCMC) methods are two ways of accounting for the variability of the estimated variance components.
+depends on the estimated variance components through $\widehat{\boldsymbol{V}}$ which makes it difficult to capture the variability of $\widehat{\boldsymbol{\beta}}$ in small sample sizes [see @mcculloch_generalized_2008, pp. 165-167]. The usual practice is to ignore the variability of the estimated variance components when making inference about the fixed effects; that is, treat $\widehat{\boldsymbol{V}}$ as the true (fixed) value of $\boldsymbol{V}$. Modern computational procedures such as the parametric bootstrap and Markov chain Monte Carlo (MCMC) methods are two ways of accounting for the variability of the estimated variance components.
 
 
 ## Point estimation
@@ -131,9 +131,9 @@ Assume that, after the data are collected and a model is fitted, we obtain a new
 $$
   \widehat{x}_0 = f^{-1}\left(\mathcal{Y}_0; \widehat{\boldsymbol{\beta}}\right), \qquad (2)
 $$
-where $\widehat{\boldsymbol{\beta}}$ is the ML estimator of $\boldsymbol{\beta}$. We shall refer to Equation (2) as the inverse estimator. Note that the point estimate $\widehat{x}_0$ does not involve any of the random-effects; the random-effects only contribute to the variance-covariance structure of the response. Further arguments for the use of (2) as an estimate for $x_0$ are given in @greenwell-topics-2014, Section 5.2.
+where $\widehat{\boldsymbol{\beta}}$ is the ML estimator of $\boldsymbol{\beta}$. We shall refer to Equation (2) as the inverse estimator. Note that the point estimate $\widehat{x}_0$ does not involve any of the random effects; the random effects only contribute to the variance-covariance structure of the response. Further arguments for the use of (2) as an estimate for $x_0$ are given in @greenwell-topics-2014, Section 5.2.
 
-Another approach is to maximize the profiled likelihood for $x_0$. This can be done simply by updating the original fitted model after adding a new point to the original data. Doing this for a range of values for $x_0$ will give the profile lilekihood $L_p\left(x_0\right)$. The maximum likelihood estimate of $x_0$ is then
+Another approach is to maximize the profiled likelihood for $x_0$. This can be done simply by updating the original fitted model after adding a new point to the original data. Doing this for a range of values for $x_0$ will give the profile likelihood $L_p\left(x_0\right)$. The maximum likelihood estimate of $x_0$ is then
 $$
 \widehat{x}_0 = argmax_{x_0} L_p\left(x_0\right)
 $$
@@ -142,12 +142,7 @@ For a balanced random intercept model, this coincides with the inverse estimator
 
 ## Interval estimation
 
-Before introducing our parametric bootstrap algorithm, we first discuss two asymptotic appraoches to interval estimation:
-
-  * using a Taylor series approximation to the standard error of $\widehat{x}_0$ to formulate a Wald-based interval;
-  * inverting an asymptotic prediction interval for $Y_0$.
-  
-These methods have the benefit of being fast to compute; but, as we will see in the next two sections, these methods do not take into account the variance of the estimated variance components leading to confidence intervals for $x_0$ that are too narrow.
+Before introducing our parametric bootstrap algorithm, we first discuss two asymptotic approaches to interval estimation: (1) using a Taylor series approximation to the standard error of $\widehat{x}_0$ to formulate a Wald-based interval, and (2) inverting an asymptotic prediction interval for $Y_0$. Both methods have the benefit of being computationally fast; but, as we will see in the next two sections, these methods do not take into account the variance of the estimated variance components, leading to confidence intervals for $x_0$ that are too narrow.
 
 
 ### Wald interval
@@ -171,7 +166,7 @@ $$
 $$
 To obtain $SE\left[\widehat{x}_0\right] = \Big\{ \widehat{VAR}\left[\widehat{x}_0\right] \Big\}^{1/2}$, we simply replace $\sigma_0^2$ and $\boldsymbol{V}$ with their respective estimates $\widehat{\sigma}_0^2$ and $\widehat{\boldsymbol{V}}$. Assuming large sample normality for $\widehat{x}_0$ leads to an approximate $1 - \alpha$ Wald confidence interval for $x_0$ of
 $$
-  CI_W\left(x_0\right) = \left( \widehat{x}_0 -  SE\left[\widehat{x}_0\right]\Phi^{-1}\left(\alpha/2\right),  \widehat{x}_0 -  SE\left[\widehat{x}_0\right]\Phi^{-1}\left(1-\alpha/2\right) \right), \qquad (2)
+  CI_W\left(x_0\right) = \left( \widehat{x}_0 -  SE\left[\widehat{x}_0\right]\Phi^{-1}\left(\alpha/2\right),  \widehat{x}_0 -  SE\left[\widehat{x}_0\right]\Phi^{-1}\left(1-\alpha/2\right) \right),
 $$
 where $\Phi^{-1}$ is the probit function.
 
@@ -188,18 +183,18 @@ $$
 $$
 If instead, $\mathcal{Y}_0$ is observed to be $y_0$ and $x_0$ is unknown, then an asymptotic $1 - \alpha$ confidence interval for the unknown $x_0$ can be obtained by inverting $\mathcal{I}_\infty\left(x_0\right)$:
 $$
-  CI_I\left(x_0\right) = \left\{ x: \Phi^{-1}\left(\alpha/2\right) \le \frac{\mathcal{Y}_0-f\left(x; \widehat{\boldsymbol{\beta}}\right)}{\left\{ \widehat{VAR}\left[\mathcal{Y}_0 - f\left(x; \widehat{\boldsymbol{\beta}}\right)\right] \right\}^{1/2}} \le \Phi^{-1}\left(1-\alpha/2\right) \right\}. \qquad (3)
+  CI_I\left(x_0\right) = \left\{ x: \Phi^{-1}\left(\alpha/2\right) \le \frac{\mathcal{Y}_0-f\left(x; \widehat{\boldsymbol{\beta}}\right)}{\left\{ \widehat{VAR}\left[\mathcal{Y}_0 - f\left(x; \widehat{\boldsymbol{\beta}}\right)\right] \right\}^{1/2}} \le \Phi^{-1}\left(1-\alpha/2\right) \right\}.
 $$
 This is known as the *inversion interval* and typically cannot be written in closed-form; therefore, numerical techniques are required to find the lower and upper bounds. Furthermore, note that $CI_I\left(x_0\right)$ is not symmetric about $\widehat{x}_0$ and will not necessarily result in a single finite interval; see, for example, @greenwell-investr-2014.
 
-Finally, notice that $CI_I\left(x_0\right)$ relies on the quantiles from a normal distribution. While it is likely that a $t$-distribution may be more accurate, it is difficult to determine the appropriate degrees of freedom. @oman-calibration-1998, suggests a $t$-distribution with $N-1$ degrees of freedom ($N$ being the total sample size).
+Finally, notice that $CI_I\left(x_0\right)$ relies on the quantiles from a normal distribution. While it is likely that a $t$-distribution may be more accurate, it is difficult to determine the appropriate degrees of freedom. @oman-calibration-1998 suggests a $t$-distribution with $N-1$ degrees of freedom ($N$ being the total sample size).
 
 
-### Monte carlo study
+### Monte Carlo study
 
 To assess the empirical performance of $CI_W\left(x_0\right)$ and $CI_I\left(x_0\right)$, we carried out a small Monte Carlo study. The simulation described in this section was conducted in R using packages `plyr` [@wickham-plyr-2011], `nlme`, and `lme4`; the source code can be made available upon request to the authors. The results are reported in Table 1 and indicate that both $CI_W\left(x_0\right)$ and $CI_I\left(x_0\right)$ have asymptotic coverage probability close to $1 - \alpha$ with sufficient sample size. The main point of this experiment was to highlight the fact that it is the number of subjects $m$, not the sample size per subject $n$, that has the biggest impact on the asymptotic coverage probability.
 
-We considered the values 5, 10, 30, 50, and 100 for both the number of subjects $m$ and and the number of observations per subject $n$. For each combination of sample sizes, we generated 1,000 data sets from a random intercept and slope model with parameters based off of an LMM fit to a real data set (the same data set used in Section 4). See Table 2 for the fixed-effects. The standard deviations for the (uncorrelated) random intercept and slope were 39.62499, and 14.28841, respectively. The residual standard deviation was $\sigma = 53.71511$. We chose $f\left(x_0; \boldsymbol{\beta}\right) = 500$ so that the true unknown is $x_0 = 8.0155$. The standard deviation of the coverage estimates is approximately $\sqrt{0.95\left(1-0.95\right)/1000} = 0.001$. A trellis plot of the results is given in Figure 1. The coverage estimates are plotted against the number of subjects $m$ and paneled by number of observations per subject $n$. The results indicate that $m \ge 30$ with $n \ge 5$ is sufficient for achieving close to the stated $1 - \alpha$ coverage probability in this particular example.
+We considered the values 5, 10, 30, 50, and 100 for both the number of subjects $m$ and and the number of observations per subject $n$. For each combination of sample sizes, we generated 1,000 data sets from a random intercept and slope model with parameters with fixed-effects $\beta_0 = -53.8$ and $\beta_1 = 69.1$. The standard deviations for the (uncorrelated) random intercept and slope were 39.62499, and 14.28841, respectively. The residual standard deviation was $\sigma = 53.71511$. We chose $f\left(x_0; \boldsymbol{\beta}\right) = 500$ so that the true unknown is $x_0 = 8.0155$. The standard deviation of the coverage estimates is approximately $\sqrt{0.95\left(1-0.95\right)/1000} = 0.001$. A trellis plot of the results is given in Figure 1. The coverage estimates are plotted against the number of subjects $m$ and paneled by number of observations per subject $n$. The results indicate that $m \ge 30$ with $n \ge 5$ is sufficient for achieving close to the stated $1 - \alpha$ coverage probability in this particular example.
 
 | $m$  | Method    | $n = 5$ | $n = 10$ | $n = 30$ | $n = 50$ | $n = 100$ |
 |:-----|:----------|:--------|:---------|:---------|:---------|:----------|
@@ -215,7 +210,7 @@ We considered the values 5, 10, 30, 50, and 100 for both the number of subjects 
 |      | Inversion | 0.95    | 0.95     | 0.95     | 0.94     | 0.95 |
 **Table 1.** Estimated coverage probability for $CI_W\left(x_0\right)$ and $CI_I\left(x_0\right)$ as a function of the number of subjects (rows) and the number of observations per subject (columns).
 
-```{r, echo=FALSE, fig.cap="Estimated coverage probability for $CI_W\\left(x_0\\right)$ and $CI_I\\left(x_0\\right)$ as a function of the number of subjects ($x$-axis) and the number of observations per subject (panels)."}
+```{r, echo=FALSE, fig.cap="**Figure 1.** Estimated coverage probability for $CI_W\\left(x_0\\right)$ and $CI_I\\left(x_0\\right)$ as a function of the number of subjects ($x$-axis) and the number of observations per subject (panels)."}
 cp <- c(0.89, 0.89, 0.89, 0.87, 0.89, 0.89, 0.90, 0.89, 0.88, 0.90, 0.92, 0.92,
         0.94, 0.93, 0.93, 0.92, 0.92, 0.94, 0.94, 0.93, 0.95, 0.95, 0.95, 0.94,
         0.95, 0.94, 0.94, 0.94, 0.94, 0.95, 0.95, 0.96, 0.95, 0.94, 0.94, 0.94,
@@ -276,11 +271,11 @@ $$
 
 ## Bladder volume example
 
-For illustration, we consider the bladder volume data which first appeared in @haylen-transvaginal-1989 and again in @brown-measurement-1993, pg. 7, and @oman-calibration-1998. The study sample consisted of a series of 23 female patients attending a urodynamic clinic. After successfully voiding their bladder, each subject was injected with sterile water in additions of 1, 1.5, and then 2.5 cl increments up to a final cumulative total of 17.5 cl. At each true volume $V$ a measure of height ($H$) in mm and depth ($D$) in mm of largest ultrasound bladder images were taken. The product $HD = H \times D$ was taken as a measure of liquid volume."
+For illustration, we consider the bladder volume data which first appeared in @haylen-transvaginal-1989 and again in @brown-measurement-1993, pg. 7, and @oman-calibration-1998. The study sample consisted of a series of 23 female patients attending a urodynamic clinic. After successfully voiding their bladder, each subject was injected with sterile water in additions of 1, 1.5, and then 2.5 cL increments up to a final cumulative total of 17.5 cL. At each true volume $V$ a measure of height ($H$) in mm and depth ($D$) in mm of largest ultrasound bladder images were taken. The product $HD = H \times D$ was taken as a measure of liquid volume.
 
-A spaghetti plot of the raw data is displayed in the left side of Figure 1. As noted by @brown-measurement-1993, $\left(H \times D\right) ^ {3/2}$ should be linearly related to $V$. The transformed version of the data is displayed in the right side of Figure 1.
+A spaghetti plot of the raw data is displayed in the left side of Figure 2. As noted by @brown-measurement-1993, $\left(H \times D\right) ^ {3/2}$ should be linearly related to $V$. The transformed data are displayed in the right side of Figure 2.
 
-```{r, echo=FALSE, fig.width=8, fig.height=4, fig.cap="Bladder volume data. Left: spaghettiplot of transformed data (lines connect measurements belonging to the same subject). Right: Estimated subject specific intercepts and slopes (with one-at-a-time 95% confidence limits)."}
+```{r, echo=FALSE, fig.width=8, fig.height=4, fig.cap="**Figure 2.** Spaghetti plots of the bladder volume data (lines connect measurements belonging to the same subject). Left: Original data. Right: Transformed data."}
 p1 <- ggplot(bladder, aes(x = volume, y = HD, group = subject)) +
   geom_line(alpha = 0.4) +
   geom_point(alpha = 0.7) +
@@ -300,7 +295,7 @@ p2 <- ggplot(bladder, aes(x = volume, y = HD ^ (3/2), group = subject)) +
 gridExtra::grid.arrange(p1, p2, ncol = 2)
 ```
 
-As indicated by Figure 1, the intercept and slopes seem to very between subjects for the transformed data; hence, the following random intercept and slope model seems appropriate:
+As indicated by Figure 2, the intercept and slopes seem to very between subjects for the transformed data; hence, the following random intercept and slope model seems appropriate:
 $$
   HD^{3/2}_{ij} = \left(\beta_0 + b_{0i}\right) + \left(\beta_1 + b_{1i}\right)V_{ij} + \epsilon_{ij}
 $$
@@ -310,22 +305,23 @@ $$
 $$
   \epsilon_{ij} \sim \mathcal{N}\left(0, \sigma^2\right),
 $$
-Here we also assume that the random effects are uncorrelated (i.e, $COV\left[b_{0i}, b_{1i}\right] = 0$). Table 1 displays the fixed-effects results from applying this model to the transformed bladder volume data. To fit such a model in R, we can use the recommended `nlme` package [@pinheiro-nlme-2013]:
+Here we also assume that the random effects are uncorrelated (i.e, $COV\left[b_{0i}, b_{1i}\right] = 0$). Table 2 displays the fixed effects results from applying this model to the transformed bladder volume data. To fit such a model in R, we can use the recommended `nlme` package [@pinheiro-nlme-2013]:
 ```{r}
 bladder.lme <- lme(HD ^ (3 / 2) ~ volume, data = bladder,
                    random = list(subject = pdDiag( ~ volume)))
 ```
 ```{r, echo=FALSE}
-knitr::kable(summary(bladder.lme)$tTable, caption = "Fixed-effects t-table for the random intercept and slope model fit to the bladder volume data.")
+knitr::kable(summary(bladder.lme)$tTable)
 ```
 
+**Table 2.** Fixed effects *t*-table for the random intercept and slope model fit to the bladder volume data.
 
-The `pdDiag` function forces a diagonal variance-covariance structure on the random-effects; hence, a covariance of zero. For an in-depth treatment on fitting LMMs using the `nlme` software, see @pinheiro-mixed-2000.
+The `pdDiag` function forces a diagonal variance-covariance structure on the random effects; hence, a covariance of zero. For an in-depth treatment on fitting LMMs using the `nlme` software, see @pinheiro-mixed-2000.
 
 
 ### The R package investr
 
-The R package `investr` [@greenwell-investr-2014] facilitates calibration/inverse estimation with linear and nonlinear regression models.  The main function, `invest`, can be used for inverse estimation of $x_0$ given an observed response $y_0$.  More recently, the package has been updated to also handle objects of class `"lme"` from the `nlme` package; `nlme` is a recommended R package for fitting linear and nonlinear mixed-effects models and is installed with R. Current functionality includes both the Wald-based and inversion methods discussed previously. The main arguments for this function (as it applies to `"lme"` objects) are noted in Table 2 below.  The source code for the package is hosted on GitHub at \url{https://github.com/bgreenwell/investr}, and the latest stable release can be found on CRAN at \url{https://CRAN.R-project.org/package=investr}.
+The R package `investr` [@greenwell-investr-2014] facilitates calibration/inverse estimation with linear and nonlinear regression models.  The main function, `invest`, can be used for inverse estimation of $x_0$ given an observed response $y_0$.  More recently, the package has been updated to also handle objects of class `"lme"` from the `nlme` package; `nlme` is a recommended R package for fitting linear and nonlinear mixed-effects models and is installed with R. Current functionality includes both the Wald-based and inversion methods discussed previously. The main arguments for this function (as it applies to `"lme"` objects) are noted in Table 3 below.  The source code for the package is hosted on GitHub at https://github.com/bgreenwell/investr, and the latest stable release can be found on CRAN at https://CRAN.R-project.org/package=investr.
 
 Fortunately, $CI_I\left(x_0\right)$ can be computed numerically using the `investr` package. However, like the Wald-based interval $CI_W\left(x_0\right)$, the inversion interval $CI_I\left(x_0\right)$ ignores the variability of the estimated variance components and will likely perform poorly in small sample sizes. An alternative approach involving the parametric bootstrap will be discussed in a later section.
 
@@ -342,8 +338,9 @@ Fortunately, $CI_I\left(x_0\right)$ can be computed numerically using the `inves
 |`maxiter`|The maximum number of iterations passed on to `uniroot`.|
 |`q1`|Optional lower cutoff to be used in forming confidence intervals. Only used when `object` inherits from class `"lme"`. Defaults to `stats::qnorm((1+level)/2)`.|
 |`q2`|Optional upper cutoff to be used in forming confidence intervals. Only used when `object` inherits from class `"lme"`. Defaults to `stats::qnorm((1-level)/2)`.|
+**Table 3.** The main arguments for the `invest` function (as it applies to `"lme"` objects).
 
-Returning to the bladder volume example, suppose we obtained an ultrasound measurement from a new patient for which $HD^{3/2} = 500$ (that's roughly 63 on the original scale).  What is the true volume of fluid ($x_0$) in the patients bladder?  We can estimate the true volume and form an approximate 95\% confidence interval using the methods discussed previously.  The point estimate is simply given by
+Returning to the bladder volume example, suppose we obtained an ultrasound measurement from a new patient for which $HD^{3/2} = 500$ (that's roughly 63 cL on the original scale).  What is the true volume of fluid ($x_0$) in the patients bladder?  We can estimate the true volume and form an approximate 95\% confidence interval using the methods discussed previously.  The point estimate is simply given by
 $$
   \widehat{x}_0 = \frac{500 + 53.83164}{69.09491} = 8.0155 \text{ (cl)}.
 $$
@@ -369,7 +366,7 @@ the values of lower and upper.
 ```
 The values for `lower`, `upper`, `tol`, and `maxiter` are controlled via the arguments of the same name listed in Table 2.
 
-When `interval = "Wald"`, an asymptotic $1 - \alpha$ confidence interval (where $\alpha$ is equal to `1 - level`) for $x_0$ is calculated according to Equation (#):
+When `interval = "Wald"`, an asymptotic $1 - \alpha$ confidence interval (where $\alpha$ is equal to `1 - level`) for $x_0$ is calculated according to Equation (2):
 ```{r}
 invest(bladder.lme, y0 = 500, interval = "Wald")
 ```
@@ -408,7 +405,7 @@ To obtain the approximate inversion interval \eqref{eqn:inversion}, we specify `
 ```{r}
 invest(bladder.lme, y0 = 500, interval = "inversion")
 ```
-Notice there is no standard error estimate when computing the inversion interval. Essentially, `invest` finds the lower and upper inversion confidence limits (#) by solving the equations
+Notice there is no standard error estimate when computing the inversion interval. Essentially, `invest` finds the lower and upper inversion confidence limits by solving the equations
 $$
   Q_I - z_{\alpha/2} = 0 \quad \text{and} \quad Q_I - z_{1-\alpha/2} = 0
 $$
@@ -423,7 +420,7 @@ As expected, this leads to a slightly larger inversion interval for $x_0$. Being
 
 ### The parametric bootstrap
 
-Implementing Algorithm 1 is relatively straight forward using the new `bootMer` function from the well-known R package `lme4` [@bates-lme4-2014] in conjunction with the `boot` package.
+Implementing Algorithm 1 is relatively straightforward using the new `bootMer` function from the well-known R package `lme4` [@bates-lme4-2014] in conjunction with the `boot` package.
 
 Since we will be using the `lme4` package, we need to refit the model using the `lmer` function (notice the different syntax required for specifying the same random effects structure):
 ```{r}
@@ -447,7 +444,7 @@ For example, to estimate $\sigma_0^2 = \widehat{VAR}\left[\mathcal{Y}_0\right]$,
 
 Although we could easily compute all the bootstrap intervals previously discussed in one call to `bootMer` and `boot.ci`, we will discuss and compute each interval separately.
 
-The following snippet of code generates $R = 9999$ bootstrap replicates of $\widehat{x}_0$, $Q_W$, and $Q_I$ according to the algorithm in Figure (#):
+The following snippet of code generates $R = 9999$ bootstrap replicates of $\widehat{x}_0$, $Q_W$, and $Q_I$ according to the Algorithm 1:
 ```{r, cache=TRUE}
 boot.fun <- function(.) {  # bootstrap function
 
@@ -481,12 +478,13 @@ boot.fun <- function(.) {  # bootstrap function
 pb <- bootMer(bladder.lmer, boot.fun, nsim = 9999, seed = 105)  # run simulation
 ```
 The `bootMer` function returns an object of class `boot` which can then be processed via the `boot` package to obtain the various bootstrap confidence intervals discussed earlier.  A basic summary of `pb` is given by
-```{r, boot, fig.pos='!bth'}
+```{r, boot, fig.pos="!bth"}
 library(boot)  # load boot package
 summary(pb)
 ```
-The estimated standard error and bias of $\widehat{x}_0$, based on $R =$ ```r pb$R``` bootstrap replicates, are ```r summary(pb)$bootSE[1]``` and ```r summary(pb)$bootBias[2]```, respectively.  The original estimate $\widehat{x}_0$ and the median of the bootstrap replicates are also given in the first row of the summary.  A graphical summary of the bootstrap simulation is given in Figure (#).  These graphs indicate that the sampling distributions of $\widehat{x}_0$, $Q_W$, and $Q_I$ are all approximately normal; hence, we would expect the bootstrap confidence intervals to be similar to the asymptotic methods based on the normal distribution discussed in Section 3.
-```{r, boot-plots, echo=FALSE, fig.width=7, fig.height=4, out.width='\\linewidth', fig.cap='Graphical summary of bootstrap replicates. $R = 9,999$ bootstrap replicates of $\\widehat{x}_0$ (left), $Q_W$ (middle), and $Q_I$ (right).', fig.pos='!htb'}
+The estimated standard error and bias of $\widehat{x}_0$, based on $R =$ ```r pb$R``` bootstrap replicates, are ```r summary(pb)$bootSE[1]``` and ```r summary(pb)$bootBias[2]```, respectively.  The original estimate $\widehat{x}_0$ and the median of the bootstrap replicates are also given in the first row of the summary.  A graphical summary of the bootstrap simulation is given in Figure 3.  These graphs indicate that the sampling distributions of $\widehat{x}_0$, $Q_W$, and $Q_I$ are all approximately normal; hence, we would expect the bootstrap confidence intervals to be similar to the asymptotic methods based on the normal distribution discussed previously.
+
+```{r, boot-plots, echo=FALSE, fig.width=7, fig.height=4, out.width="\\linewidth", fig.cap="**Figure 3.** Graphical summary of bootstrap replicates. $R = 9,999$ bootstrap replicates of $\\widehat{x}_0$ (left), $Q_W$ (middle), and $Q_I$ (right).", fig.pos="!htb"}
 cols <- RColorBrewer::brewer.pal(9, "Set1")
 x0.boot <- pb$t[, 1]
 x0.stud <- (x0.boot - x0.est)/sqrt(pb$t[, 2])
@@ -514,6 +512,7 @@ qqnorm(QI.boot, main = "", xlab = "Normal quantile", ylab = "Sample quantile",
        col = cols[3])
 qqline(QI.boot)
 ```
+
 To obtain the percentile and studentized $t$ intervals, we can use the `boot` package function `boot.ci`:
 ```{r}
 boot.ci(pb, type = c("norm", "perc", "stud"), index = 1:2)
@@ -522,7 +521,7 @@ For comparison, we also included the option to compute a bootstrap normal-approx
 $$
   \left( \widehat{x}_0- \texttt{bootBias} \right) \pm z_{\alpha/2}\texttt{bootSE}
 $$
-where `bootBias` and `bootSE` can be found in the first row of `summary(pb)`.  In other words, it is just a Wald-type interval that uses a bias-corrected estimate of $x_0$, along with a bootstrap estimate of the standard error of $\widehat{x}_0$.  While this may be more accurate than $C_W\left(x_0\right)$, it may still not perform well in small sample sizes because of the strict normality assumption.  In this example, however, normality does not appear to be an issue.
+where `bootBias` and `bootSE` can be found in the first row of `summary(pb)`.  In other words, it is just a Wald-type interval that uses a bias-corrected estimate of $x_0$, along with a bootstrap estimate of the standard error of $\widehat{x}_0$.  While this may be more accurate than $C_W\left(x_0\right)$, it still may not perform well in small sample sizes because of the strict normality assumption.  In this example, however, normality does not appear to be an issue.
 
 The bootstrap adjusted inversion interval can be computed as easily as the ordinary inversion interval, except we need to supply `invest` with the estimated quantiles $\widehat{F}_{Q_I}\left(0.025\right)$ and $\widehat{F}_{Q_I}\left(0.975\right)$:
 ```{r}
@@ -531,13 +530,13 @@ qvals <- quantile(QI.boot, c(0.025, 0.975))  # sample quantiles
 invest(bladder.lme, y0 = 500, q1 = qvals[1], q2 = qvals[2])
 ```
 
-All of the approximate 95% confidence intervals we computed for the true volume of fluid are summarized in Table (3) below. Notice that all of the bootstrap-based confidence intervals for $x_0$ (indicated by a $\star$) are slightly wider than those based on large sample normal theory results. This is likely due to the fact that the large sample intervals do not take into account the variability of the estimated variance components.
+All of the approximate 95% confidence intervals we computed for the true volume of fluid are summarized in Table 4 below. Notice that all of the bootstrap-based confidence intervals for $x_0$ (indicated by a $\star$) are slightly wider than those based on large sample normal theory results. This is likely due to the fact that the large sample intervals do not take into account the variability of the estimated variance components.
 
 ```{r, echo=FALSE}
 # LMM, etc.
 bladder.lmer <- lmer(HD ^ (3 / 2) ~ volume + (0 + 1 | subject) + 
                        (0 + volume | subject), data = bladder)
-fe <- unname(fixef(bladder.lmer))  # fixed-effects
+fe <- unname(fixef(bladder.lmer))  # fixed effects
 x0.est <- (500 - fe[1]) / fe[2]
 varY <- function(object, x) {
   vc <- as.data.frame(lme4::VarCorr(object))$vcov
@@ -576,11 +575,11 @@ lengths <- apply(rbind(c(wald$lower, wald$upper),
   $CI_{percentile}^\star\left(x_0\right)$     | ```r x0.est``` | ```r se.boot``` | (```r perc[1]```, ```r perc[2]```) | ```r lengths[3]``` |
   $CI_W^\star\left(x_0\right)$           | ```r x0.est``` | ```r se.boot``` | (```r stud[1]```, ```r stud[2]```) | ```r lengths[4]``` |
   $CI_I^\star\left(x_0\right)$      | ```r x0.est``` | ```r se.boot``` | (```r inversion.pboot$lower```, ```r inversion.pboot$upper```) | ```r lengths[5]``` |
-Table 3. Summary of results for the bladder volume example. A $\star$ symbol indicates a parametric bootstrap-based confidence interval
+**Table 4.** Summary of results for the bladder volume example. A $\star$ symbol indicates a parametric bootstrap-based confidence interval
 
 For the bladder volume data, we were able to transform the response so that a straight line provided a reasonable fit. This simple form led to a closed-form solution for $\widehat{x}_0$. This is not always the case in practice. For example, suppose that we observed a new ultra sound measurement `HD = 90` and we wish to estimate the true volume of liquid in the patients bladder using the original (untransformed) data. 
 
-As it turns out, adding a quadratic term to the previously fitted LMM yields a reasonable fit. Since the intervals for coefficient of the quadratic term in Figure (#) mostly overlap, we used the same random effects structure as before with the model for the transformed data. 
+As it turns out, adding a quadratic term to the previously fitted LMM yields a reasonable fit. We used the same random effects structure as before with the model for the transformed data. 
 $$
   HD_{ij} = \left(\beta_0 + b_{0i}\right) + \left(\beta_1 + b_{1i}\right)V_{ij} + \beta_2 V_{ij}^2 + \epsilon_{ij}
 $$
@@ -590,15 +589,18 @@ $$
 $$
   \epsilon_{ij} \sim \mathcal{N}\left(0, \sigma^2\right),
 $$
-As before, we assume that the random effects are uncorrelated. Table (#) displays the fixed-effects results from applying this model to the bladder volume data.
+As before, we assume that the random effects are uncorrelated. Table 5 displays the fixed effects results from applying this model to the bladder volume data.
 ```{r, echo=FALSE}
 bladder.lmer <- lmer(HD ~ volume + I(volume^2) + (0+1|subject) + 
                        (0+volume|subject), data = bladder)
-knitr::kable(summary(bladder.lmer)$coefficients, caption = "Fixed-effects t-table for the random intercept and slope model fit to the bladder volume data.")
+knitr::kable(summary(bladder.lmer)$coefficients)
 ```
 
-The point estimate of $x_0$ is easily obtained using the quadratic formula: $\widehat{x}_0 = 13.05$.  Recall, from Figure 1 that each patient has a slightly nonlinear trajectory; thus, there is no reason to expect the sampling distribution of $\widehat{x}_0$ to be normal, or even symmetric in this case.  To see that this is indeed the case, we applied the parametric bootstrap.  The results are summarized in Figure (#).  Clearly, the Wald-based confidence interval ($C_W\left(x_0\right)$) will not be accurate in this case. However, the approximate predictive pivot used in the inversion interval ($C_I\left(x_0\right)$) appears reasonably normal. Thus, our recommendation is that, if the number of subjects $m$ is reasonably large (say $m \ge 30$) and the bootstrap replicates are approximately normal (see Figure (#)), then the Wald-based and inversion methods are useful. Otherwise, it is probably best to stick with the parametric bootstrap confidence intervals or, if prior information is available, adopt a fully Bayesian approach.
-```{r, boot-plots-2, echo=FALSE, fig.width=7, fig.height=4, out.width='\\linewidth', fig.cap='Graphical summary of bootstrap replicates. $R = 9,999$ bootstrap replicates of $\\widehat{x}_0$ (left) and $Q_I$ (right).', fig.pos='!htb'}
+**Table 5.** Fixed effects *t*-table for the random intercept and slope model fit to the bladder volume data.
+
+The point estimate of $x_0$ is easily obtained using the quadratic formula: $\widehat{x}_0 = 13.05$.  Recall, from Figure 2 that each patient has a slightly nonlinear trajectory; thus, there is no reason to expect the sampling distribution of $\widehat{x}_0$ to be normal, or even symmetric in this case.  To see that this is indeed the case, we applied the parametric bootstrap.  The results are summarized in Figure 4.  Clearly, the Wald-based confidence interval ($C_W\left(x_0\right)$) will not be accurate in this case. However, the approximate predictive pivot used in the inversion interval ($C_I\left(x_0\right)$) appears reasonably normal. Thus, our recommendation is that, if the number of subjects $m$ is reasonably large (say $m \ge 30$) and the bootstrap replicates are approximately normal (see Figure 3), then the Wald-based and inversion methods are useful. Otherwise, it is probably best to stick with the parametric bootstrap confidence intervals or, if prior information is available, adopt a fully Bayesian approach.
+
+```{r, boot-plots-2, echo=FALSE, fig.width=7, fig.height=4, out.width="\\linewidth", fig.cap="**Figure 4.** Graphical summary of bootstrap replicates. $R = 9,999$ bootstrap replicates of $\\widehat{x}_0$ (left) and $Q_I$ (right).", fig.pos="!htb"}
 x0.boot2 <- pb2$t[, 1]
 QI.boot2 <- pb2$t[, 2]
 par(mfrow = c(2, 2), mar = c(4, 4, 0.1, 0.1), las = 1)
@@ -623,7 +625,7 @@ qqline(QI.boot2)
 
 We have discussed a number of confidence interval procedures for statistical calibration in linear models with random coefficients with a single level of grouping. We have described two R packages for implementing these procedures: `investr` and `lme4`. The `investr` package can be used for obtaining the asymptotic confidence intervals (i.e., the Wald-based and inversion confidence intervals). We also showed how the `lme4` package can be used to obtain calibration intervals based on a parametric bootstrap using the recently added `bootMer` function. Future work will likely extend the methods discussed in this paper to more complicated cases such as nonlinear mixed-effects models and multi-level hierarchical models (i.e., more than one grouping variable).
 
-While most calibration experiments involve only a single predictor, it is not uncommon for there to be additional covariates (e.g., gender, age, race, etc.). For the later case, all the methods discussed in this paper still apply as long as the additional covariates are held fixed at a constant value.
+While most calibration experiments involve only a single predictor, it is not uncommon for there to be additional covariates (e.g., gender, age, race, etc.). For the latter case, all the methods discussed in this paper still apply as long as the additional covariates are held fixed at a constant value (e.g., the mean for continuous covariates and the most frequent level for factors).
 
 
 ## References
